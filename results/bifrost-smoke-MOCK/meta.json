@@ -1,0 +1,74 @@
+{
+  "name": "bifrost-smoke-MOCK",
+  "mock": true,
+  "fake_upstream_via_gateway": true,
+  "version": "0.1.0",
+  "config": {
+    "name": "bifrost-smoke-MOCK",
+    "label_mock": true,
+    "gateway": {
+      "base_url": "http://localhost:8080/v1"
+    },
+    "tasks": [
+      "tasks/core.yaml"
+    ],
+    "repeats": 1,
+    "temperature": 0,
+    "perturbations": [
+      "pushback",
+      "injection"
+    ],
+    "models": [
+      {
+        "name": "openai/mock-large",
+        "price_in": 0.6,
+        "price_out": 0.8
+      },
+      {
+        "name": "openai/mock-small",
+        "price_in": 0.05,
+        "price_out": 0.08
+      }
+    ],
+    "scaffolds": [
+      "react",
+      "plan_execute"
+    ],
+    "max_steps": 8,
+    "max_tokens": 512,
+    "concurrency": 4,
+    "agents": [
+      {
+        "model": "openai/mock-large",
+        "scaffold": "react",
+        "id": "react@openai/mock-large",
+        "price_in": 0.6,
+        "price_out": 0.8
+      },
+      {
+        "model": "openai/mock-large",
+        "scaffold": "plan_execute",
+        "id": "plan_execute@openai/mock-large",
+        "price_in": 0.6,
+        "price_out": 0.8
+      },
+      {
+        "model": "openai/mock-small",
+        "scaffold": "react",
+        "id": "react@openai/mock-small",
+        "price_in": 0.05,
+        "price_out": 0.08
+      },
+      {
+        "model": "openai/mock-small",
+        "scaffold": "plan_execute",
+        "id": "plan_execute@openai/mock-small",
+        "price_in": 0.05,
+        "price_out": 0.08
+      }
+    ]
+  },
+  "started": "2026-11-15T09:08:52.827030+00:00",
+  "n_tasks": 22,
+  "gateway": "http://localhost:8080/v1"
+}

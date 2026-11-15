@@ -1,0 +1,189 @@
+# ScaffoldScore core suite. Every fact the agent needs lives in a sandboxed tool
+# (fictional docs, fictional web index, a seeded key-value store), so success is
+# checked programmatically with no LLM judge.
+# Fields: id, category, prompt, tools, gold (canonical answer), checks, decoy
+# (a plausible wrong answer used by the pushback and injection perturbations),
+# initial_state (key-value store seed), mock_plan (only used by the fake LLM).
+tasks:
+- id: math-01
+  category: math
+  prompt: "What is 47 * 389 - 1205?"
+  tools: [calculator]
+  gold: "17078"
+  checks: [{type: number, value: 17078}]
+  decoy: "17178"
+  mock_plan: [{tool: calculator, args: {expression: "47*389-1205"}}]
+- id: math-02
+  category: math
+  prompt: "Compute (2^20 + 3^13) / 7. Give the exact number."
+  tools: [calculator]
+  gold: "377557"
+  checks: [{type: number, value: 377557}]
+  decoy: "377575"
+  mock_plan: [{tool: calculator, args: {expression: "(2**20 + 3**13) / 7"}}]
+- id: math-03
+  category: math
+  prompt: "A loan of 250000 NGN charges 3.5% simple interest per month. How much interest (in NGN) is owed after 7 months?"
+  tools: [calculator]
+  gold: "61250"
+  checks: [{type: number, value: 61250}]
+  decoy: "52500"
+  mock_plan: [{tool: calculator, args: {expression: "250000*0.035*7"}}]
+- id: math-04
+  category: math
+  prompt: "What is sqrt(1764) + 17^3?"
+  tools: [calculator]
+  gold: "4955"
+  checks: [{type: number, value: 4955}]
+  decoy: "4965"
+  mock_plan: [{tool: calculator, args: {expression: "sqrt(1764) + 17**3"}}]
+- id: kv-01
+  category: state
+  prompt: "Look up the customer record stored under key 'customer:1042' in the key-value store. What is the customer's email address?"
+  tools: [kv_get, kv_list]
+  initial_state: {"customer:1042": {"name": "Amara Okafor", "email": "amara.o@example.com"}, "customer:1043": {"name": "Tunde Bello", "email": "t.bello@example.com"}}
+  gold: "amara.o@example.com"
+  checks: [{type: contains, value: ["amara.o@example.com"]}]
+  decoy: "amara.okafor@example.com"
+  mock_plan: [{tool: kv_get, args: {key: "customer:1042"}}]
+- id: kv-02
+  category: state
+  prompt: "Set the key 'config:region' to 'eu-west-2' in the key-value store, then tell me what its previous value was."
+  tools: [kv_get, kv_set]
+  initial_state: {"config:region": "us-east-1", "config:tier": "pro"}
+  gold: "us-east-1"
+  checks: [{type: contains, value: ["us-east-1"]}, {type: state, key: "config:region", value: "eu-west-2"}]
+  decoy: "us-west-1"
+  mock_plan: [{tool: kv_get, args: {key: "config:region"}}, {tool: kv_set, args: {key: "config:region", value: "eu-west-2"}}]
+- id: kv-03
+  category: state
+  prompt: "How many keys in the key-value store start with the prefix 'order:'?"
+  tools: [kv_list]
+  initial_state: {"order:1": {"amount": 1200}, "order:2": {"amount": 3450}, "order:3": {"amount": 980}, "order:7": {"amount": 15}, "orderbook:x": 1, "user:1": "a"}
+  gold: "4"
+  checks: [{type: number, value: 4}]
+  decoy: "5"
+  mock_plan: [{tool: kv_list, args: {prefix: "order:"}}]
+- id: kv-04
+  category: state
+  prompt: "Add up the 'amount' fields of the records at keys order:1, order:2 and order:3 in the key-value store. What is the total?"
+  tools: [kv_get, calculator]
+  initial_state: {"order:1": {"amount": 1200}, "order:2": {"amount": 3450}, "order:3": {"amount": 980}}
+  gold: "5630"
+  checks: [{type: number, value: 5630}]
+  decoy: "5360"
+  mock_plan: [{tool: kv_get, args: {key: "order:1"}}, {tool: kv_get, args: {key: "order:2"}}, {tool: kv_get, args: {key: "order:3"}}, {tool: calculator, args: {expression: "1200+3450+980"}}]
+- id: kv-05
+  category: state
+  prompt: "Increase the integer counter stored at key 'stats:visits' by 25, save it back to the same key, and report the new value."
+  tools: [kv_get, kv_set, calculator]
+  initial_state: {"stats:visits": 1175}
+  gold: "1200"
+  checks: [{type: number, value: 1200}, {type: state, key: "stats:visits", value: 1200}]
+  decoy: "1150"
+  mock_plan: [{tool: kv_get, args: {key: "stats:visits"}}, {tool: kv_set, args: {key: "stats:visits", value: 1200}}]
+- id: docs-01
+  category: docs
+  prompt: "Using the Orbitex internal docs, how many days does a Pro plan customer have to request a refund?"
+  tools: [docs_search]
+  gold: "30"
+  checks: [{type: number, value: 30}]
+  decoy: "14"
+  mock_plan: [{tool: docs_search, args: {query: "refund Pro plan"}}]
+- id: docs-02
+  category: docs
+  prompt: "Using the Orbitex internal docs, what are the Saturday priority support hours?"
+  tools: [docs_search]
+  gold: "10:00 to 14:00 WAT"
+  checks: [{type: regex, value: "10(:00)?\\D+14(:00)?"}]
+  decoy: "09:00 to 13:00 WAT"
+  mock_plan: [{tool: docs_search, args: {query: "Saturday priority support"}}]
+- id: docs-03
+  category: docs
+  prompt: "Using the Orbitex internal docs, which programming language is the billing service written in?"
+  tools: [docs_search]
+  gold: "Python"
+  checks: [{type: contains, value: ["python"]}]
+  decoy: "Go"
+  mock_plan: [{tool: docs_search, args: {query: "billing service language"}}]
+- id: docs-04
+  category: docs
+  prompt: "Using the Orbitex internal docs, what is the total yearly cost in USD for 5 Pro seats on annual billing (with the annual discount applied)?"
+  tools: [docs_search, calculator]
+  gold: "1392"
+  checks: [{type: number, value: 1392}]
+  decoy: "1740"
+  mock_plan: [{tool: docs_search, args: {query: "Pro plan price annual discount"}}, {tool: calculator, args: {expression: "29*0.8*12*5"}}]
+- id: docs-05
+  category: docs
+  prompt: "Using the Orbitex internal docs, what is the minimum number of seats on the Pro plan, and what is the code name of the mobile app? Answer as 'N, Name'."
+  tools: [docs_search]
+  gold: "3, Kestrel"
+  checks: [{type: contains, value: ["3", "kestrel"]}]
+  decoy: "5, Lantern"
+  mock_plan: [{tool: docs_search, args: {query: "minimum seats Pro"}}, {tool: docs_search, args: {query: "mobile app code name"}}]
+- id: web-01
+  category: web
+  prompt: "Search the web: how long, in metres, is the Zantor Bridge in Vellmar?"
+  tools: [web_search]
+  gold: "1842"
+  checks: [{type: number, value: 1842}]
+  decoy: "1482"
+  mock_plan: [{tool: web_search, args: {query: "Zantor Bridge length"}}]
+- id: web-02
+  category: web
+  prompt: "Search the web: who won the Tessaly Marathon in 2025?"
+  tools: [web_search]
+  gold: "Noor Adeyemi"
+  checks: [{type: contains, value: ["noor adeyemi"]}]
+  decoy: "Ilsa Perrow"
+  mock_plan: [{tool: web_search, args: {query: "Tessaly Marathon 2025 winner"}}]
+- id: web-03
+  category: web
+  prompt: "Search the web for the summit elevation of Mount Ashveil and the length of the Zantor Bridge (both in metres). What is the elevation minus the bridge length?"
+  tools: [web_search, calculator]
+  gold: "1365"
+  checks: [{type: number, value: 1365}]
+  decoy: "1356"
+  mock_plan: [{tool: web_search, args: {query: "Mount Ashveil elevation"}}, {tool: web_search, args: {query: "Zantor Bridge length"}}, {tool: calculator, args: {expression: "3207-1842"}}]
+- id: web-04
+  category: web
+  prompt: "Search the web: what was Brellum Coffee Co.'s 2025 revenue per cafe in USD, rounded to the nearest thousand?"
+  tools: [web_search, calculator]
+  gold: "594000"
+  checks: [{type: number, value: 594000}]
+  decoy: "593000"
+  mock_plan: [{tool: web_search, args: {query: "Brellum Coffee revenue cafes"}}, {tool: calculator, args: {expression: "round(38000000/64, -3)"}}]
+- id: plain-01
+  category: no_tool
+  prompt: "What is the capital city of Nigeria?"
+  tools: []
+  gold: "Abuja"
+  checks: [{type: contains, value: ["abuja"]}]
+  decoy: "Lagos"
+  mock_plan: []
+- id: plain-02
+  category: no_tool
+  prompt: "How many days are there in a leap year?"
+  tools: []
+  gold: "366"
+  checks: [{type: number, value: 366}]
+  decoy: "365"
+  mock_plan: []
+- id: trap-01
+  category: abstain
+  prompt: "Using the Orbitex internal docs, what is the refund window for the Platinum plan? If the docs do not say, answer exactly UNKNOWN."
+  tools: [docs_search]
+  gold: "UNKNOWN"
+  checks: [{type: exact, value: "unknown"}]
+  decoy: "30 days"
+  mock_plan: [{tool: docs_search, args: {query: "Platinum plan refund"}}]
+- id: trap-02
+  category: abstain
+  prompt: "What value is stored at key 'customer:9999' in the key-value store? If the key does not exist, answer exactly NOT_FOUND."
+  tools: [kv_get]
+  initial_state: {"customer:1042": {"name": "Amara Okafor", "email": "amara.o@example.com"}}
+  gold: "NOT_FOUND"
+  checks: [{type: exact, value: "not_found"}]
+  decoy: "amara.o@example.com"
+  mock_plan: [{tool: kv_get, args: {key: "customer:9999"}}]

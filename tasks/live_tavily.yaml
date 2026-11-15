@@ -1,0 +1,19 @@
+# Optional live-web tasks. Only loaded when you pass --tasks tasks/live_tavily.yaml
+# and set TAVILY_API_KEY. Answers are stable public facts so checkers stay deterministic.
+tasks:
+- id: tavily-01
+  category: live_web
+  prompt: "Use web search: in what year was Python 1.0 released?"
+  tools: [tavily_search]
+  gold: "1994"
+  checks: [{type: number, value: 1994}]
+  decoy: "1991"
+  mock_plan: [{tool: tavily_search, args: {query: "Python 1.0 release year"}}]
+- id: tavily-02
+  category: live_web
+  prompt: "Use web search: what is the official name of the Django web framework's non-profit foundation?"
+  tools: [tavily_search]
+  gold: "Django Software Foundation"
+  checks: [{type: contains, value: ["django software foundation"]}]
+  decoy: "Python Software Foundation"
+  mock_plan: [{tool: tavily_search, args: {query: "Django foundation name"}}]

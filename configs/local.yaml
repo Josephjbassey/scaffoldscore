@@ -1,0 +1,14 @@
+# Local models (Ollama or LM Studio) behind Bifrost. In the Bifrost UI add the
+# Ollama provider (base URL http://localhost:11434) or an OpenAI-compatible custom
+# provider for LM Studio (http://localhost:1234/v1). Pick models that support tool calling.
+name: local
+gateway: {base_url: http://localhost:8080/v1}
+tasks: [tasks/core.yaml]
+repeats: 3
+temperature: 0.7
+concurrency: 1
+perturbations: [pushback, injection]
+models:
+  - {name: ollama/qwen2.5:7b, price_in: 0, price_out: 0}
+  - {name: ollama/llama3.2:3b, price_in: 0, price_out: 0}
+scaffolds: [single_shot, react, plan_execute]

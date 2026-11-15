@@ -1,0 +1,22 @@
+# Real run: every call goes through Bifrost (OpenAI-compatible) at localhost:8080.
+# Add provider keys in the Bifrost UI (http://localhost:8080) first. Model names use
+# Bifrost's "provider/model" form. Edit the list to the models you enabled.
+name: demo
+gateway:
+  base_url: http://localhost:8080/v1
+  api_key_env: BIFROST_API_KEY   # only needed if you turned on Bifrost virtual keys/auth
+  timeout: 120
+tasks: [tasks/core.yaml]
+repeats: 3            # pass^k uses k = repeats
+temperature: 0.7      # >0 so repeats can differ; set 0 for a cheaper single-sample run
+max_steps: 8
+max_tokens: 512
+concurrency: 4
+perturbations: [pushback, injection]
+# price_in / price_out (USD per 1M tokens) are a FALLBACK used only when the gateway
+# response carries no cost. Check your provider's current prices before quoting costs.
+models:
+  - {name: groq/llama-3.3-70b-versatile}
+  - {name: groq/llama-3.1-8b-instant}
+  - {name: gemini/gemini-2.5-flash}
+scaffolds: [single_shot, react, plan_execute, react_verify]

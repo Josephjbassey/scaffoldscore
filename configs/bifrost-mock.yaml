@@ -1,0 +1,13 @@
+# Gateway smoke test with NO API key: scaffoldscore -> Bifrost -> local fake LLM server.
+# See README "Verify the Bifrost path offline". Results are EXAMPLE DATA ONLY.
+name: bifrost-smoke-MOCK
+label_mock: true   # upstream is the fake LLM server, so label every record as mock
+gateway: {base_url: http://localhost:8080/v1}
+tasks: [tasks/core.yaml]
+repeats: 1
+temperature: 0
+perturbations: [pushback, injection]
+models:
+  - {name: openai/mock-large, price_in: 0.60, price_out: 0.80}
+  - {name: openai/mock-small, price_in: 0.05, price_out: 0.08}
+scaffolds: [react, plan_execute]

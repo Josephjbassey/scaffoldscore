@@ -1,0 +1,10 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+  "client": {"enable_logging": true, "enforce_auth_on_inference": false},
+  "providers": {
+    "openai": {
+      "keys": [{"name": "mock-key", "value": "not-a-real-key", "models": ["*"], "weight": 1.0}],
+      "network_config": {"base_url": "http://127.0.0.1:9100"}
+    }
+  }
+}
